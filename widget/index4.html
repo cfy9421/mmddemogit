@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>登录</title>
+	<meta name="viewport" content="initial-scale=1, maximum-scale=1">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<link rel="stylesheet" href="./script/light7/light7.min.css" />
+	<link rel="stylesheet" href="./script/light7/index.css" />
+	<link rel="stylesheet" href="./res/css/iconfont.css" />
+	<script type='text/javascript' src="./script/jquery-2.2.1.min.js"></script>
+	<script type='text/javascript' src='./script/light7/light7.min.js' charset='utf-8'></script>
+</head>
+<body>
+<style>
+.page .content{background-color: #FFF;}
+.page .content .login-group{padding: 20px;}
+.page .content .login-header{padding: 20px 0;}
+.page .content .login-header .login-img{text-align: center;}
+.page .content .login-header .login-img img{width: 80px;height: 80px;}
+.page .content .login-group .login-input{display: flex;height: 45px;line-height: 45px;border: 1px solid #DCE3E7;border-radius: 3px;padding: 10px 15px;margin-bottom: 15px;background-color: #F3F6F8;}
+.page .content .login-group .login-input .icon{font-size: 18px;height: 25px;line-height: 25px;color: #98A3AA;padding-right: 10px;}
+.page .content .login-group .login-input input{font-size: 15px;overflow: hidden;width: 100%;color: #333;background-color: #F3F6F8;border: none;}
+.page .content .login-group .login-input .input-pass{flex: 1;}
+.page .content .login-group .login-input .no-pass{height: 25px;line-height: 25px;color: #0EC3B3;font-size: 15px;text-align: right;}
+.page .content .login-group .content-block{margin-top: 30px;padding: 0;}
+.page .content .login-group .content-block .button{color: #fff;border: 1px solid #0EC3B3;background-color: #0EC3B3;}
+</style>
+<div class="page check-serial">
+	<div class="content">
+		<div class="login-group">
+			<div class="login-header">
+				<div class="login-img">
+					<img src="./icon/logo.png" alt="" />
+				</div>
+			</div>
+			<div class="login-input">
+				<i class="icon icon-group"></i>
+				<input  class="input-serial" type="text" name="serial" value="" placeholder="请输入编号">
+			</div>
+			<div class="login-input">
+				<i class="icon icon-people"></i>
+				<input  class="input-mobile" type="text" name="mobile" value=""placeholder="请输入账号">
+			</div>
+			<div class="login-input">
+				<i class="icon icon-lock"></i>
+				<input  class="input-pass" type="password" name="password" value="" placeholder="请输入密码">
+				<a href="" class="no-pass">忘记密码?</a>
+			</div>
+			<div class="content-block">
+				<div class="row">
+					<div class="col-100"><a href="javascript:;" class="button button-big" id="btn-serial">登录</a></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript">
+	function isIos() {
+		var userAgent = navigator.userAgent;
+		if(userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1 || userAgent.indexOf('Mac') > -1){
+			return true;
+		}
+		return false;
+	}
+	
+	window.apiready = function(){
+		if(api.connectionType == 'none') {
+			api.openFrame({
+				name: 'frm_connection',
+				url: './html/connect.html',
+				bounces: true,
+				rect: {
+					x: 0,
+					y: 0,
+					w: 'auto',
+					h: 'auto'
+				}
+			});
+			return false;
+		}
+
+		var url_cn = api.getPrefs({
+			sync: true,
+			key: 'url_cn'
+		});
+		if(url_cn) {
+			window.location.href = url_cn;
+			return;
+		}
+		$('.check-serial .content').removeClass('hide');
+
+		$('#btn-serial').click(function(){
+			var serial = $.trim($('.input-serial').val());
+			if(!serial) {
+				$.toast('请输入配送员编号');
+				return false;
+			}
+			var mobile = $.trim($('.input-mobile').val());
+			if(!mobile) {
+				$.toast('请输入配送员账号');
+				return false;
+			}
+			var password = $.trim($('.input-pass').val());
+			if(!password) {
+				$.toast('请输入配送员密码');
+				return false;
+			}
+			$.showIndicator();
+			var client = 'android';
+			if(isIos()) {
+				client = 'ios';
+			}
+			api.ajax({
+				url: 'http://up.hao071.com/app/index.php?i=1&c=entry&do=serial&op=deliveryer_v2&m=tiny_manage',
+				method: 'post',
+				timeout: 300,
+				data: {
+					values: {serial_sn: serial, client: client}
+				}
+			}, function(ret) {
+				if(ret) {
+					var result = ret.message;
+					if(result.resultCode != 0) {
+						$.hideIndicator();
+						$.toast(result.resultMessage);
+						return false;
+					} else {
+						var authInfo = result;
+						api.ajax({
+							url: authInfo.data.api_login_url,
+							method: 'post',
+							timeout: 300,
+							data: {
+								values: {
+									mobile: mobile,
+									password: password
+								}
+							}
+						}, function(ret) {
+							if(ret) {
+								var url_cn = authInfo.data.url_cn;
+								api.setPrefs({
+									key: 'url',
+									value: authInfo.data.url
+								});
+								api.setPrefs({
+									key: 'url_cn',
+									value: authInfo.data.url_cn
+								});
+								api.setPrefs({
+									key: 'uniacid',
+									value: authInfo.data.uniacid
+								});
+								api.setPrefs({
+									key: 'serial_sn',
+									value: authInfo.data.serial_sn
+								});
+								var phonic = {
+									voice: 1,
+									vibrate: 1,
+									voice_type: 1
+								};
+								api.setPrefs({
+									key: 'idphonic',
+									value: phonic
+								});
+
+								var result = ret.message;
+								if(!result.errno) {
+									api.setPrefs({
+										key: 'idtoken',
+										value: result.message.deliveryer.token
+									});
+								}
+								window.location.href = url_cn;
+								return;
+							}
+						});
+						return;
+					}
+				}
+			});
+		});
+		$.init();
+	};
+</script>
+</html>
